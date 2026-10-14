@@ -7,11 +7,27 @@ const preparePreview = vi.hoisted(() => vi.fn());
 const saveTemplate = vi.hoisted(() => vi.fn());
 const recheckSave = vi.hoisted(() => vi.fn());
 const listTemplates = vi.hoisted(() => vi.fn());
+const updateTemplate = vi.hoisted(() => vi.fn());
+const deleteTemplate = vi.hoisted(() => vi.fn());
+const duplicateTemplate = vi.hoisted(() => vi.fn());
+const copyBuiltinTemplate = vi.hoisted(() => vi.fn());
 
 vi.mock('@renderer/api', () => ({
   isElectronMode: () => true,
-  api: { customTeamTemplates: { preparePreview, saveTemplate, recheckSave, listTemplates } },
+  api: {
+    customTeamTemplates: {
+      preparePreview,
+      saveTemplate,
+      recheckSave,
+      listTemplates,
+      updateTemplate,
+      deleteTemplate,
+      duplicateTemplate,
+      copyBuiltinTemplate,
+    },
+  },
 }));
+
 vi.mock('@features/localization/renderer', () => ({
   useAppTranslation: () => ({
     t: (key: string, values?: Record<string, unknown>) =>
@@ -22,6 +38,7 @@ vi.mock('@features/localization/renderer', () => ({
         : key,
   }),
 }));
+
 vi.mock('@renderer/components/ui/dialog', () => ({
   Dialog: ({
     open,
@@ -56,6 +73,15 @@ vi.mock('@renderer/components/ui/dialog', () => ({
     React.createElement('h2', null, children),
 }));
 
+vi.mock('@renderer/components/ui/tooltip', () => ({
+  Tooltip: ({ children }: { children: React.ReactNode }) =>
+    React.createElement(React.Fragment, null, children),
+  TooltipTrigger: ({ children }: { children: React.ReactNode }) =>
+    React.createElement(React.Fragment, null, children),
+  TooltipContent: ({ children }: { children: React.ReactNode }) =>
+    React.createElement('div', { role: 'tooltip' }, children),
+}));
+
 import { MyTemplatesDialog } from './MyTemplatesDialog';
 
 import type {
@@ -72,6 +98,7 @@ const templates: readonly CustomTeamTemplateV1[] = [
     teamPrompt: 'Lead the work.',
     members: [{ name: 'ann', role: 'Developer' }],
     createdAt: '2026-10-01T10:00:00.000Z',
+    revision: 1,
   },
   {
     templateId: 'template-2',
@@ -79,6 +106,7 @@ const templates: readonly CustomTeamTemplateV1[] = [
     schemaVersion: 1,
     teamPrompt: '',
     members: [],
+    revision: 1,
   },
 ];
 
@@ -106,6 +134,10 @@ beforeEach(() => {
   saveTemplate.mockReset();
   recheckSave.mockReset();
   listTemplates.mockReset();
+  updateTemplate.mockReset();
+  deleteTemplate.mockReset();
+  duplicateTemplate.mockReset();
+  copyBuiltinTemplate.mockReset();
   listTemplates.mockResolvedValue({ status: 'ready', templates });
   onClose = vi.fn();
   host = document.createElement('div');
@@ -120,7 +152,7 @@ afterEach(() => {
 });
 
 describe('MyTemplatesDialog', () => {
-  it('renders the stored templates read-only', async () => {
+  it('renders the stored templates with edit, duplicate, and delete actions', async () => {
     await render();
     expect(listTemplates).toHaveBeenCalledTimes(1);
     expect(host.querySelector('[data-testid="custom-template-library"]')).not.toBeNull();
@@ -132,23 +164,86 @@ describe('MyTemplatesDialog', () => {
     expect(host.textContent).toContain('customTemplates.library.noMembers');
     expect(host.textContent).toContain('customTemplates.library.createdAt|date=');
 
-    const labels = Array.from(host.querySelectorAll('button')).map(
-      (candidate) => candidate.textContent?.trim() ?? ''
+    // Management actions are present
+    const editButtons = host.querySelectorAll('button[aria-label="customTemplates.actions.edit"]');
+    const duplicateButtons = host.querySelectorAll(
+      'button[aria-label="customTemplates.actions.duplicate"]'
     );
-    // Read-only in A1: close (and retry on failures) are the only actions.
-    expect(labels).toContain('actions.close');
-    expect(labels.some((label) => /edit|delete|duplicate|export|import|create/i.test(label))).toBe(
-      false
+    const deleteButtons = host.querySelectorAll(
+      'button[aria-label="customTemplates.actions.delete"]'
     );
+    expect(editButtons.length).toBe(2);
+    expect(duplicateButtons.length).toBe(2);
+    expect(deleteButtons.length).toBe(2);
+
+    // Copy built-in action in header
+    expect(button('customTemplates.actions.copyBuiltin')).not.toBeNull();
   });
 
-  it('shows a genuinely empty library instead of an error', async () => {
+  it('opens edit dialog when edit button is clicked', async () => {
+    await render();
+
+    const editBtn = host.querySelector<HTMLButtonElement>(
+      'button[aria-label="customTemplates.actions.edit"]'
+    );
+    await act(async () => {
+      editBtn?.click();
+    });
+
+    expect(host.textContent).toContain('customTemplates.edit.title');
+    const nameInput = host.querySelector<HTMLInputElement>('input#edit-template-name');
+    expect(nameInput?.value).toBe('Alpha');
+  });
+
+  it('opens duplicate dialog when duplicate button is clicked', async () => {
+    await render();
+
+    const dupBtn = host.querySelector<HTMLButtonElement>(
+      'button[aria-label="customTemplates.actions.duplicate"]'
+    );
+    await act(async () => {
+      dupBtn?.click();
+    });
+
+    expect(host.textContent).toContain('customTemplates.duplicate.title');
+    expect(host.textContent).toContain('customTemplates.duplicate.description|name=Alpha');
+  });
+
+  it('opens delete dialog when delete button is clicked', async () => {
+    await render();
+
+    const delBtn = host.querySelector<HTMLButtonElement>(
+      'button[aria-label="customTemplates.actions.delete"]'
+    );
+    await act(async () => {
+      delBtn?.click();
+    });
+
+    expect(host.textContent).toContain('customTemplates.delete.title');
+    expect(host.textContent).toContain('customTemplates.delete.description|name=Alpha');
+  });
+
+  it('opens copy built-in dialog when copy built-in button is clicked', async () => {
+    await render();
+
+    await act(async () => {
+      button('customTemplates.actions.copyBuiltin').click();
+    });
+
+    expect(host.textContent).toContain('customTemplates.copyBuiltin.title');
+    expect(host.querySelector('[data-testid="builtin-templates-list"]')).not.toBeNull();
+  });
+
+  it('shows a genuinely empty library instead of an error, offering copy built-in', async () => {
     listTemplates.mockResolvedValue({ status: 'empty' } satisfies ListCustomTeamTemplatesResult);
     await render();
     expect(host.textContent).toContain('customTemplates.library.empty');
     expect(host.textContent).toContain('customTemplates.library.emptyDescription');
     expect(host.querySelector('[data-testid="custom-template-library"]')).toBeNull();
     expect(host.querySelector('[data-testid="custom-template-library-error"]')).toBeNull();
+
+    // Copy built-in is discoverable in empty state
+    expect(button('customTemplates.actions.copyBuiltin')).not.toBeNull();
   });
 
   it('keeps unreadable stored records visible as a warning next to the readable ones', async () => {
