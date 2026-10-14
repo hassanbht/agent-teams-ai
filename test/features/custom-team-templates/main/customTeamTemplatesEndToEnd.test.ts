@@ -61,6 +61,8 @@ function fakeLibrary() {
       const found = rows.get(templateId);
       return Promise.resolve(found ? { status: 'found', template: found } : { status: 'notFound' });
     },
+    customTeamTemplateUpdate: () => Promise.resolve({ status: 'notFound', templateId: '' }),
+    customTeamTemplateDelete: () => Promise.resolve({ status: 'notFound', templateId: '' }),
   };
   return { gateway, requests, rows };
 }

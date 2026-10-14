@@ -61,6 +61,8 @@ export function parseTemplateMembers(value: unknown): CustomTeamTemplateMemberV1
  * Column values come from validated input only: the normalized name is derived
  * by the caller from the shared domain rule, and the creation timestamp is
  * stamped here by the trusted storage clock rather than accepted from a caller.
+ * New rows always start at revision 1; A1 rows predate the column and are
+ * backfilled to 1 by migration 7.
  */
 export function toStoredTemplateRow(input: {
   request: CreateCustomTeamTemplateRecordRequest;
@@ -78,6 +80,7 @@ export function toStoredTemplateRow(input: {
     membersJson: JSON.stringify(template.members),
     contentHash,
     createdAt: input.createdAt,
+    revision: 1,
   };
 }
 
@@ -86,7 +89,8 @@ export function toStoredTemplateRow(input: {
  *
  * A record written by an unknown contract version, or one whose members no
  * longer parse, is reported as unreadable: it is never reinterpreted as a valid
- * empty template and never silently dropped.
+ * empty template and never silently dropped. A missing revision (A1 rows read
+ * before migration 7 ran) normalizes to 1, matching the backfill.
  */
 export function readStoredTemplate(row: StoredCustomTeamTemplateRow): StoredCustomTeamTemplateRead {
   if (row.schemaVersion !== CUSTOM_TEAM_TEMPLATE_SCHEMA_VERSION) {
@@ -102,6 +106,8 @@ export function readStoredTemplate(row: StoredCustomTeamTemplateRow): StoredCust
   if (!members) {
     return { status: 'unreadable', templateId: row.id };
   }
+  const revision =
+    typeof row.revision === 'number' && Number.isInteger(row.revision) ? row.revision : 1;
   return {
     status: 'readable',
     template: {
@@ -112,6 +118,7 @@ export function readStoredTemplate(row: StoredCustomTeamTemplateRow): StoredCust
       teamPrompt: row.teamPrompt,
       members,
       createdAt: row.createdAt,
+      revision,
     },
   };
 }

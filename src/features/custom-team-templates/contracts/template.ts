@@ -55,4 +55,26 @@ export interface CustomTeamTemplateV1 extends CustomTeamTemplateContentV1 {
   description?: string;
   /** Creation timestamp for the saved record, when the store supports one. */
   createdAt?: string;
+  /**
+   * Optimistic-concurrency revision for the saved record.
+   *
+   * Introduced in Phase 2 (A3): the SQLite worker stamps `1` on creation
+   * (migration 7 backfills `1` for A1 rows) and every update/delete
+   * compare-and-swaps against the expected revision in one worker-side
+   * transaction. Absent means `1` for records produced before the field
+   * existed (e.g. in-memory test doubles); the worker always populates it.
+   */
+  revision?: number;
+}
+
+/**
+ * Normalizes a possibly-absent revision to its effective value.
+ *
+ * Records created before the revision field existed behave as revision `1`,
+ * which is exactly what migration 7 backfills for stored A1 rows.
+ */
+export function resolveTemplateRevision(template: Pick<CustomTeamTemplateV1, 'revision'>): number {
+  return typeof template.revision === 'number' && Number.isInteger(template.revision)
+    ? template.revision
+    : 1;
 }

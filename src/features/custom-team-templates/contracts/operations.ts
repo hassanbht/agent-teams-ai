@@ -164,7 +164,9 @@ export type RecheckCustomTeamTemplateSaveResult =
   | { status: 'validationFailed'; issues: readonly CustomTeamTemplateValidationIssue[] }
   | { status: 'storageUnavailable' };
 
-/** Listing takes no parameters. */
+/**
+ * Listing takes no parameters.
+ */
 export type ListCustomTeamTemplatesRequest = Record<string, never>;
 
 export type CustomTeamTemplateUnreadableReason = 'unreadableRecord';
@@ -189,4 +191,130 @@ export type ListCustomTeamTemplatesResult =
       templates: readonly CustomTeamTemplateV1[];
       unreadableRecords: readonly CustomTeamTemplateUnreadableRecord[];
     }
+  | { status: 'storageUnavailable' };
+
+/**
+ * Editable fields of one custom template (A3).
+ *
+ * The allowlist mirrors A1 validation: the display name, the optional
+ * description, the team prompt and the supported per-member configuration
+ * (`name`/`role`/`workflow` only). No runtime, provider, identity,
+ * timestamp or revision field is editable — those stay server-side.
+ */
+export interface UpdateCustomTeamTemplateFields {
+  name: string;
+  description?: string;
+  teamPrompt: string;
+  members: readonly CustomTeamTemplateMemberV1[];
+}
+
+export interface UpdateCustomTeamTemplateRequest {
+  /** Stable identity of the template to update. The renderer never invents it. */
+  templateId: string;
+  /**
+   * Optimistic-concurrency guard: the revision the editor read.
+   * The worker compare-and-swaps against it in one transaction; a stale
+   * value yields `revisionConflict` with the current state instead of
+   * overwriting a newer edit.
+   */
+  expectedRevision: number;
+  fields: UpdateCustomTeamTemplateFields;
+}
+
+/**
+ * Update outcomes (A3 edit).
+ *
+ * `updated` carries the stored record (with the bumped revision).
+ * `revisionConflict` carries the current stored state so the editor can
+ * rebase without losing its typed input. `notFound` and
+ * `storageUnavailable` keep their A1 meanings; `validationFailed` and
+ * `nameConflict` reuse the established codes/policies.
+ */
+export type UpdateCustomTeamTemplateResult =
+  | { status: 'updated'; template: CustomTeamTemplateV1 }
+  | { status: 'revisionConflict'; current: CustomTeamTemplateV1 }
+  | { status: 'notFound'; templateId: string }
+  | { status: 'nameConflict'; existingTemplateId: string }
+  | { status: 'validationFailed'; issues: readonly CustomTeamTemplateValidationIssue[] }
+  | { status: 'unreadableRecord'; templateId: string }
+  | { status: 'storageUnavailable' };
+
+export interface DeleteCustomTeamTemplateRequest {
+  /** Stable identity of the template to delete. */
+  templateId: string;
+  /**
+   * Optimistic-concurrency guard, same semantics as update.
+   * Guards against deleting a newer edit from a stale selection.
+   */
+  expectedRevision: number;
+}
+
+/**
+ * Delete outcomes (A3).
+ *
+ * `deleted` removes exactly one template record; teams created from it are
+ * untouched (there is no cascade). `revisionConflict` carries the current
+ * state so the UI can ask for a renewed confirmation.
+ */
+export type DeleteCustomTeamTemplateResult =
+  | { status: 'deleted'; templateId: string }
+  | { status: 'revisionConflict'; current: CustomTeamTemplateV1 }
+  | { status: 'notFound'; templateId: string }
+  | { status: 'unreadableRecord'; templateId: string }
+  | { status: 'storageUnavailable' };
+
+export interface DuplicateCustomTeamTemplateRequest {
+  /** Stable identity of the source custom template. */
+  sourceTemplateId: string;
+  /** Display name for the new copy; uniqueness is enforced case-insensitively. */
+  name: string;
+}
+
+/**
+ * Duplicate outcomes (A3).
+ *
+ * Creates a brand-new record with a fresh stable id, copying only the
+ * approved template fields (name/description/prompt/members). The source
+ * record is never modified. `sourceNotFound` is distinct from a generic
+ * `notFound` so the UI can name the missing source.
+ */
+export type DuplicateCustomTeamTemplateResult =
+  | { status: 'duplicated'; template: CustomTeamTemplateV1 }
+  | { status: 'sourceNotFound'; sourceTemplateId: string }
+  | { status: 'sourceUnreadable'; sourceTemplateId: string }
+  | { status: 'nameConflict'; existingTemplateId: string }
+  | { status: 'templateIdConflict'; templateId: string }
+  | { status: 'validationFailed'; issues: readonly CustomTeamTemplateValidationIssue[] }
+  | { status: 'storageUnavailable' };
+
+/** Built-in template ids stay a closed union (never widened to strings). */
+export type BuiltinTeamTemplateId =
+  | 'software-product'
+  | 'marketing'
+  | 'content'
+  | 'research'
+  | 'sales'
+  | 'customer-support'
+  | 'operations'
+  | 'learning';
+
+export interface CopyBuiltinTemplateRequest {
+  /** Which built-in template to copy; the catalogue itself stays read-only. */
+  builtinTemplateId: BuiltinTeamTemplateId;
+  /** Display name for the new custom copy; uniqueness is enforced. */
+  name: string;
+}
+
+/**
+ * Built-in-copy outcomes (A3).
+ *
+ * Persists the built-in configuration as a new custom template with a fresh
+ * local id. Never modifies the built-in catalogue, its ids, or translations.
+ */
+export type CopyBuiltinTemplateResult =
+  | { status: 'copied'; template: CustomTeamTemplateV1 }
+  | { status: 'builtinNotFound'; builtinTemplateId: string }
+  | { status: 'nameConflict'; existingTemplateId: string }
+  | { status: 'templateIdConflict'; templateId: string }
+  | { status: 'validationFailed'; issues: readonly CustomTeamTemplateValidationIssue[] }
   | { status: 'storageUnavailable' };

@@ -154,6 +154,9 @@ export const memberWorkSyncMetricEvents = sqliteTable(
  * derived from `name` by the worker, never supplied by a caller.
  * `content_hash` is an opaque digest of the canonical allowlisted content; it
  * answers "is this the same save request?" and is not a secret.
+ * `revision` is the Phase 2 (A3) optimistic-concurrency counter: stamped `1`
+ * on creation, bumped by every compare-and-swap update, and compared by every
+ * update/delete. Migration 7 backfills `1` for A1 rows.
  */
 export const customTeamTemplates = sqliteTable(
   'custom_team_templates',
@@ -167,6 +170,7 @@ export const customTeamTemplates = sqliteTable(
     membersJson: text('members_json').notNull(),
     contentHash: text('content_hash').notNull(),
     createdAt: text('created_at').notNull(),
+    revision: integer('revision').notNull().default(1),
   },
   (table) => [uniqueIndex('idx_custom_team_templates_name_normalized').on(table.nameNormalized)]
 );

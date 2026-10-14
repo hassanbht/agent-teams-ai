@@ -89,6 +89,61 @@ export type ReadCustomTeamTemplateRecordResult =
   | { status: 'unreadable'; templateId: string };
 
 /**
+ * Compare-and-swap update payload (Phase 2 / A3).
+ *
+ * `expectedRevision` is the revision the editor read; the worker applies the
+ * update only when the stored revision still equals it. `contentHash` digests
+ * the new canonical content; the worker stores it but never re-derives it.
+ * Display name, description, prompt and members are the only mutable fields —
+ * identity, schema version and timestamps stay worker-owned.
+ */
+export interface UpdateCustomTeamTemplateRecordRequest {
+  templateId: string;
+  expectedRevision: number;
+  template: Omit<CustomTeamTemplateV1, 'createdAt' | 'revision'>;
+  contentHash: string;
+}
+
+/**
+ * Update outcomes at the storage boundary.
+ *
+ * `updated` carries the stored record with its bumped revision.
+ * `revisionConflict` carries the current record so the caller can rebase.
+ * `nameTaken` means another template id owns the requested normalized name.
+ * `retryable` covers a busy write lock; the caller may retry the same request.
+ */
+export type UpdateCustomTeamTemplateRecordResult =
+  | { status: 'updated'; template: CustomTeamTemplateV1 }
+  | { status: 'revisionConflict'; current: CustomTeamTemplateV1 }
+  | { status: 'notFound'; templateId: string }
+  | { status: 'unreadable'; templateId: string }
+  | {
+      status: 'conflict';
+      reason: 'nameTaken';
+      existingTemplateId: string;
+    }
+  | { status: 'retryable'; reason: 'databaseBusy' };
+
+/** Compare-and-swap delete payload (Phase 2 / A3). */
+export interface DeleteCustomTeamTemplateRecordRequest {
+  templateId: string;
+  expectedRevision: number;
+}
+
+/**
+ * Delete outcomes at the storage boundary.
+ *
+ * `deleted` removed exactly one row. There is no cascade: teams created from
+ * the template live outside this table and are untouched.
+ */
+export type DeleteCustomTeamTemplateRecordResult =
+  | { status: 'deleted'; templateId: string }
+  | { status: 'revisionConflict'; current: CustomTeamTemplateV1 }
+  | { status: 'notFound'; templateId: string }
+  | { status: 'unreadable'; templateId: string }
+  | { status: 'retryable'; reason: 'databaseBusy' };
+
+/**
  * Persistence port for the custom team template library.
  *
  * The custom-team-templates feature owns this port; internal-storage supplies
@@ -111,4 +166,26 @@ export interface CustomTeamTemplateStorageGateway {
   customTeamTemplateGetById(
     request: ReadCustomTeamTemplateRecordRequest
   ): Promise<ReadCustomTeamTemplateRecordResult>;
+  /**
+   * Compare-and-swap update (Phase 2 / A3).
+   *
+   * Atomically replaces the allowlisted content of `templateId` when its
+   * stored revision equals `expectedRevision`, bumping the revision by one.
+   * A stale revision yields `revisionConflict` with the current record;
+   * the update never overwrites a newer edit.
+   */
+  customTeamTemplateUpdate(
+    request: UpdateCustomTeamTemplateRecordRequest
+  ): Promise<UpdateCustomTeamTemplateRecordResult>;
+  /**
+   * Compare-and-swap delete (Phase 2 / A3).
+   *
+   * Deletes exactly one template record when its stored revision equals
+   * `expectedRevision`. Never cascades into teams, tasks, messages or
+   * histories (none of those live in this table). A stale revision yields
+   * `revisionConflict` with the current record.
+   */
+  customTeamTemplateDelete(
+    request: DeleteCustomTeamTemplateRecordRequest
+  ): Promise<DeleteCustomTeamTemplateRecordResult>;
 }

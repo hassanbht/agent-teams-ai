@@ -193,6 +193,17 @@ const MIGRATIONS: InternalStorageMigration[] = [
         ON custom_team_templates (name_normalized)`,
     ],
   },
+  {
+    // Phase 2 (A3): optimistic-concurrency revision for the template library.
+    // A1 rows predate the column, so every pre-existing row is backfilled to
+    // revision 1 — the same value new rows are stamped with. Append-only: this
+    // entry is new, version 6 above is untouched.
+    version: 7,
+    statements: [
+      `ALTER TABLE custom_team_templates ADD COLUMN revision INTEGER NOT NULL DEFAULT 1`,
+      `UPDATE custom_team_templates SET revision = 1 WHERE revision IS NULL`,
+    ],
+  },
 ];
 
 export const INTERNAL_STORAGE_SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;
