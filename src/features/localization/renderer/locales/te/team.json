@@ -1,5 +1,11 @@
 {
   "activity": {
+    "reactions": {
+      "add": "స్పందనను జోడించు ({{count}})",
+      "remove": "స్పందనను తీసివేయి ({{count}})",
+      "count": "స్పందనలు: {{count}}",
+      "failed": "స్పందనలను నవీకరించలేకపోయాము"
+    },
     "actions": {
       "createTaskFromMessage": "సందేశం నుండి టాస్క్ సృష్టించు",
       "editMessage": "సందేశాన్ని సవరించు",
@@ -998,7 +1004,8 @@
       "cancel": "రద్దు చేయి",
       "delete": "తొలగించు",
       "markResolved": "పరిష్కరించబడినట్లుగా గుర్తించు",
-      "save": "సేవ్ చేయి"
+      "save": "సేవ్ చేయి",
+      "openInTaskTab": "వేరే ట్యాబ్‌లో తెరవండి"
     },
     "attachments": {
       "commentAttachment": "వ్యాఖ్య అటాచ్‌మెంట్",

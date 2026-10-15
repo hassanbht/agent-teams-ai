@@ -1,5 +1,11 @@
 {
   "activity": {
+    "reactions": {
+      "add": "Dodaj reakcję ({{count}})",
+      "remove": "Usuń reakcję ({{count}})",
+      "count": "Reakcje: {{count}}",
+      "failed": "Nie udało się zaktualizować reakcji"
+    },
     "actions": {
       "createTaskFromMessage": "Utwórz zadanie z wiadomości",
       "editMessage": "Edytuj wiadomość",
@@ -998,7 +1004,8 @@
       "cancel": "Anuluj",
       "delete": "Usuń",
       "markResolved": "Oznacz jako rozwiązane",
-      "save": "Zapisz"
+      "save": "Zapisz",
+      "openInTaskTab": "Otwórz w osobnej karcie"
     },
     "attachments": {
       "commentAttachment": "Załącznik komentarza",

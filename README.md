@@ -1,6 +1,8 @@
+### [Boss, watch the video](https://agentteams.live/)
+
 <p align="center">
   <a href="https://agentteams.live/">
-    <img src="docs/assets/github-header-agent-teams-ai.png" alt="Agent Teams AI - Get a lot done by doing very little" width="100%" />
+    <img alt="Agent Teams AI - Get a lot done by doing very little" width="100%" src="docs/assets/agent-teams-overview.webp" />
   </a>
 </p>
 
@@ -200,8 +202,12 @@ No prerequisites - the app can detect installed Claude Code, Codex, and OpenCode
 - [Security](#security)
 - [License](#license)
 
+# ❤️ Sponsors
+
 <p>
-  <a href="https://fluxionai.world/register?source=github&campaign=github-agent-teams&promo=AGENTTEAMS"><img src="docs/assets/sponsor-fluxion.png" alt="Sponsor: Fluxion AI - one gateway to the world's leading AI models. $3 signup credit" width="72%" /></a>
+  <a href="https://fluxionai.world/register?source=github&campaign=github-agent-teams&promo=AGENTTEAMS"><img src="docs/assets/sponsor-fluxion.png" alt="Sponsor: Fluxion AI - one gateway to the world's leading AI models. $3 signup credit" /></a>
+
+  
   <a href="#partnerships"><img src="docs/assets/sponsor-become.png" alt="Become a sponsor - partner with or sponsor Agent Teams" width="26%" /></a>
 </p>
 
@@ -404,7 +410,7 @@ Electron 40, React 19, TypeScript 5, Tailwind CSS 3, Zustand 4. The desktop app 
 
 <br />
 
-**Prerequisites:** Node.js 26.10.0 Current (recommended for source builds) or Node.js 24.16.0 LTS, pnpm 11.22.0
+**Prerequisites:** Node.js 26.11.1 Current (recommended for source builds) or Node.js 24.16.0 LTS, pnpm 11.22.0
 
 On macOS, official Node.js 24 prebuilt binaries require macOS 13.5+.
 Node.js 26 does not bundle Corepack; install the pinned pnpm version separately if `pnpm` is unavailable.

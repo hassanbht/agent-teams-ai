@@ -1,5 +1,11 @@
 {
   "activity": {
+    "reactions": {
+      "add": "Aggiungi reazione ({{count}})",
+      "remove": "Rimuovi reazione ({{count}})",
+      "count": "Reazioni: {{count}}",
+      "failed": "Impossibile aggiornare le reazioni"
+    },
     "actions": {
       "createTaskFromMessage": "Crea task dal messaggio",
       "editMessage": "Modifica messaggio",
@@ -998,7 +1004,8 @@
       "cancel": "Annulla",
       "delete": "Elimina",
       "markResolved": "Segna come risolto",
-      "save": "Salva"
+      "save": "Salva",
+      "openInTaskTab": "Apri in una scheda separata"
     },
     "attachments": {
       "commentAttachment": "Allegato del commento",

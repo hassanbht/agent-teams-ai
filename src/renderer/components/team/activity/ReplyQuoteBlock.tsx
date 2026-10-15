@@ -1,7 +1,10 @@
 import { memo, useState } from 'react';
 
 import { useAppTranslation } from '@features/localization/renderer';
-import { MarkdownViewer } from '@renderer/components/chat/viewers/MarkdownViewer';
+import {
+  CompactMarkdownPreview,
+  MarkdownViewer,
+} from '@renderer/components/chat/viewers/MarkdownViewer';
 import { MemberBadge } from '@renderer/components/team/MemberBadge';
 import { linkifyTaskIdsInMarkdown } from '@renderer/utils/taskReferenceUtils';
 
@@ -66,10 +69,9 @@ export const ReplyQuoteBlock = memo(
               className="relative mt-0.5 h-4 min-w-0 overflow-hidden text-[11px] leading-4 text-[var(--color-text-secondary)] [&_div]:!m-0 [&_div]:!max-h-none [&_div]:!overflow-hidden [&_div]:!p-0 [&_p]:!m-0 [&_p]:truncate [&_p]:whitespace-nowrap [&_p]:text-[11px] [&_p]:leading-4"
               data-wide-reply-preview="true"
             >
-              <MarkdownViewer
+              <CompactMarkdownPreview
                 content={linkifyTaskIdsInMarkdown(reply.originalText)}
-                bare
-                maxHeight="max-h-4"
+                taskOriginTeamName={teamName}
               />
             </div>
           </div>
@@ -79,6 +81,7 @@ export const ReplyQuoteBlock = memo(
               maxHeight={bodyMaxHeight}
               copyable
               bare
+              taskOriginTeamName={teamName}
             />
           </div>
         </div>
@@ -104,11 +107,19 @@ export const ReplyQuoteBlock = memo(
 
           {/* Quote text */}
           <div className={`pr-5 opacity-50 ${expanded ? '' : 'max-h-[3.75rem] overflow-hidden'}`}>
-            <MarkdownViewer
-              content={linkifyTaskIdsInMarkdown(reply.originalText)}
-              bare
-              maxHeight={quoteMaxHeight}
-            />
+            {expanded ? (
+              <MarkdownViewer
+                content={linkifyTaskIdsInMarkdown(reply.originalText)}
+                bare
+                maxHeight={quoteMaxHeight}
+                taskOriginTeamName={teamName}
+              />
+            ) : (
+              <CompactMarkdownPreview
+                content={linkifyTaskIdsInMarkdown(reply.originalText)}
+                taskOriginTeamName={teamName}
+              />
+            )}
           </div>
 
           {/* More/less toggle */}
@@ -129,6 +140,7 @@ export const ReplyQuoteBlock = memo(
           maxHeight={bodyMaxHeight}
           copyable
           bare
+          taskOriginTeamName={teamName}
         />
       </div>
     );

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { create } from 'zustand';
 
+import { createTeamTaskDetailStoreSlices } from '../../../src/renderer/store/slices/taskDetailStoreSlices';
 import {
   __getTeamScopedTransientStateForTests,
   __resetTeamSliceModuleStateForTests,
@@ -56,6 +57,8 @@ const hoisted = vi.hoisted(() => ({
   restoreTeam: vi.fn(),
   permanentlyDeleteTeam: vi.fn(),
   discardComposerDraftNamespace: vi.fn(),
+  captureManualQueueNamespace: vi.fn(),
+  discardManualMessageQueueNamespace: vi.fn(),
   sendMessage: vi.fn(),
   sendCrossTeamMessage: vi.fn(),
   listCrossTeamTargets: vi.fn(),
@@ -124,6 +127,11 @@ vi.mock('@renderer/api', () => ({
       invalidateTaskChangeSummaries: hoisted.invalidateTaskChangeSummaries,
     },
   },
+}));
+
+vi.mock('@features/manual-message-queue', () => ({
+  captureManualQueueNamespace: hoisted.captureManualQueueNamespace,
+  discardManualMessageQueueNamespace: hoisted.discardManualMessageQueueNamespace,
 }));
 
 vi.mock('@renderer/services/composerDraftRepository', () => ({
@@ -208,6 +216,7 @@ type TeamSliceHarnessState = TeamSlice &
   Pick<
     AppState,
     | 'activeContextId'
+    | 'isContextSwitching'
     | 'getAllPaneTabs'
     | 'invalidateTaskChangePresence'
     | 'openTab'
@@ -291,7 +300,9 @@ function createSliceStore() {
     (set, get, store) =>
       ({
         ...createTeamSlice(set as never, get as never, store as never),
+        ...createTeamTaskDetailStoreSlices(set as never, get as never, store as never),
         activeContextId: 'local',
+        isContextSwitching: false,
         paneLayout: createPaneLayout(),
         selectedProjectId: null,
         openTab: vi.fn(),
@@ -570,6 +581,14 @@ describe('teamSlice actions', () => {
     hoisted.restoreTeam.mockResolvedValue(undefined);
     hoisted.permanentlyDeleteTeam.mockResolvedValue(undefined);
     hoisted.discardComposerDraftNamespace.mockResolvedValue('discarded');
+    hoisted.captureManualQueueNamespace.mockResolvedValue({
+      transport: 'desktop-local-teams-v1',
+      root: '/original/.claude',
+      contextId: 'local',
+      host: null,
+      teamName: 'my-team',
+    });
+    hoisted.discardManualMessageQueueNamespace.mockResolvedValue(undefined);
     hoisted.retryFailedOpenCodeSecondaryLanes.mockResolvedValue({
       attempted: [],
       confirmed: [],
@@ -888,6 +907,50 @@ describe('teamSlice actions', () => {
         'provisioning-progress:provisioning:terminal-ready:fetchTeamAgentRuntime:scheduled'
       ]
     ).toBe(1);
+  });
+
+  it('does not demand team-wide provisioning refreshes from a visible task-detail tab', () => {
+    const store = createSliceStore();
+    const fetchTeams = vi.fn(async () => undefined);
+    const selectTeam = vi.fn(async () => undefined);
+    const refreshTeamData = vi.fn(async () => undefined);
+    const fetchMemberSpawnStatuses = vi.fn(async () => undefined);
+    const fetchTeamAgentRuntime = vi.fn(async () => undefined);
+    store.setState({
+      fetchTeams,
+      selectTeam,
+      refreshTeamData,
+      fetchMemberSpawnStatuses,
+      fetchTeamAgentRuntime,
+      selectedTeamName: 'my-team',
+      selectedTeamData: null,
+      paneLayout: createPaneLayout([
+        {
+          id: 'task-detail-my-team',
+          type: 'team',
+          teamName: 'my-team',
+          label: 'Task 1',
+          taskDetail: { contextId: 'local', taskId: '1' },
+        },
+      ]),
+    });
+
+    store.getState().onProvisioningProgress({
+      runId: 'run-task-only-ready',
+      teamName: 'my-team',
+      state: 'ready',
+      message: 'Ready',
+      startedAt: '2026-10-14T10:00:00.000Z',
+      updatedAt: '2026-10-14T10:00:01.000Z',
+    } as never);
+
+    expect(fetchTeams).toHaveBeenCalledTimes(1);
+    expect(selectTeam).not.toHaveBeenCalled();
+    expect(refreshTeamData).not.toHaveBeenCalled();
+    expect(fetchMemberSpawnStatuses).not.toHaveBeenCalled();
+    expect(fetchTeamAgentRuntime).not.toHaveBeenCalled();
+    expect(hoisted.getMemberSpawnStatuses).not.toHaveBeenCalled();
+    expect(hoisted.getTeamAgentRuntime).not.toHaveBeenCalled();
   });
 
   it('maps inbox verify failure to user-friendly text', async () => {
@@ -2277,7 +2340,7 @@ describe('teamSlice actions', () => {
     fullRequest.resolve(fullSnapshot);
     await fullPromise;
     expect(store.getState().selectedTeamData).toEqual(fullSnapshot);
-    expect(store.getState().selectedTeamLoading).toBe(true);
+    expect(store.getState().selectedTeamLoading).toBe(false);
 
     thinRequest.reject(new Error('Timeout after 30000ms: team:getData(my-team,mode=thin)'));
     await selectPromise;
@@ -4476,6 +4539,14 @@ describe('teamSlice actions', () => {
   });
 
   it('removes non-selected team cache entries on permanent delete', async () => {
+    const namespace = {
+      transport: 'desktop-local-teams-v1',
+      root: '/original/.claude',
+      contextId: 'context-before-delete',
+      host: null,
+      teamName: 'my-team',
+    };
+    hoisted.captureManualQueueNamespace.mockResolvedValue(namespace);
     const store = createSliceStore();
     store.setState({
       activeContextId: 'context-before-delete',
@@ -4515,6 +4586,11 @@ describe('teamSlice actions', () => {
       'context-before-delete',
       'my-team'
     );
+    expect(hoisted.captureManualQueueNamespace).toHaveBeenCalledWith(
+      'my-team',
+      expect.any(Function)
+    );
+    expect(hoisted.discardManualMessageQueueNamespace).toHaveBeenCalledWith(namespace);
     expect(store.getState().teamDataCacheByName['my-team']).toBeUndefined();
     expect(store.getState().teamDataCacheByName['other-team']).toBeDefined();
   });
@@ -4524,9 +4600,19 @@ describe('teamSlice actions', () => {
     store.setState({ activeContextId: 'context-a' });
     await store.getState().deleteTeam('my-team');
     expect(hoisted.discardComposerDraftNamespace).not.toHaveBeenCalled();
+    expect(hoisted.captureManualQueueNamespace).not.toHaveBeenCalled();
+    expect(hoisted.discardManualMessageQueueNamespace).not.toHaveBeenCalled();
   });
 
   it('keeps the captured context when permanent delete resolves after a context switch', async () => {
+    const namespace = {
+      transport: 'desktop-local-teams-v1',
+      root: '/original/.claude',
+      contextId: 'context-original',
+      host: null,
+      teamName: 'my-team',
+    };
+    hoisted.captureManualQueueNamespace.mockResolvedValue(namespace);
     let resolveDelete!: () => void;
     hoisted.permanentlyDeleteTeam.mockImplementation(
       () =>
@@ -4544,16 +4630,24 @@ describe('teamSlice actions', () => {
       'context-original',
       'my-team'
     );
+    expect(hoisted.discardManualMessageQueueNamespace).toHaveBeenCalledWith(namespace);
+    expect(hoisted.captureManualQueueNamespace.mock.invocationCallOrder[0]).toBeLessThan(
+      hoisted.permanentlyDeleteTeam.mock.invocationCallOrder[0]
+    );
   });
 
   it('does not roll back a confirmed permanent delete when local draft cleanup fails', async () => {
     vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     hoisted.discardComposerDraftNamespace.mockRejectedValueOnce(new Error('storage unavailable'));
+    hoisted.discardManualMessageQueueNamespace.mockRejectedValueOnce(
+      new Error('storage unavailable')
+    );
     const store = createSliceStore();
     store.setState({ activeContextId: 'context-a' });
     await expect(store.getState().permanentlyDeleteTeam('my-team')).resolves.toBeUndefined();
     expect(hoisted.permanentlyDeleteTeam).toHaveBeenCalledWith('my-team');
     expect(store.getState().fetchTeams).toHaveBeenCalled();
+    expect(hoisted.discardManualMessageQueueNamespace).toHaveBeenCalledOnce();
   });
 
   it('clears selected team state and cache on soft delete', async () => {

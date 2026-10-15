@@ -1,5 +1,11 @@
 {
   "activity": {
+    "reactions": {
+      "add": "எதிர்வினையைச் சேர் ({{count}})",
+      "remove": "எதிர்வினையை அகற்று ({{count}})",
+      "count": "எதிர்வினைகள்: {{count}}",
+      "failed": "எதிர்வினைகளைப் புதுப்பிக்க முடியவில்லை"
+    },
     "actions": {
       "createTaskFromMessage": "செய்தியிலிருந்து task ஐ உருவாக்கு",
       "editMessage": "செய்தியைத் திருத்து",
@@ -998,7 +1004,8 @@
       "cancel": "ரத்துசெய்",
       "delete": "நீக்கு",
       "markResolved": "தீர்க்கப்பட்டதாகக் குறி",
-      "save": "சேமி"
+      "save": "சேமி",
+      "openInTaskTab": "தனி தாவலில் திறக்கவும்"
     },
     "attachments": {
       "commentAttachment": "கருத்து இணைப்பு",

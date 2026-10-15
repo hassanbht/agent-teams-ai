@@ -23,9 +23,14 @@ vi.mock('@renderer/hooks/useTheme', () => ({
   useTheme: () => ({ theme: 'dark', resolvedTheme: 'dark', isDark: true, isLight: false }),
 }));
 vi.mock('@renderer/components/chat/viewers/MarkdownViewer', () => ({
-  MarkdownViewer: ({ content }: { content: string }) => React.createElement('div', null, content),
+  MarkdownViewer: ({ content, maxHeight }: { content: string; maxHeight?: string }) =>
+    React.createElement(
+      'div',
+      { 'data-markdown-renderer': 'full', 'data-max-height': maxHeight },
+      content
+    ),
   CompactMarkdownPreview: ({ content, className }: { content: string; className?: string }) =>
-    React.createElement('div', { className }, content),
+    React.createElement('div', { className, 'data-markdown-renderer': 'compact' }, content),
 }));
 vi.mock('@renderer/components/common/CopyButton', () => ({
   CopyButton: () => null,
@@ -124,9 +129,6 @@ vi.mock('@renderer/components/ui/tooltip', () => ({
     React.createElement(React.Fragment, null, children),
   TooltipContent: ({ children }: { children: React.ReactNode }) =>
     React.createElement('div', null, children),
-}));
-vi.mock('@renderer/components/team/activity/ReplyQuoteBlock', () => ({
-  ReplyQuoteBlock: () => null,
 }));
 
 describe('ActivityItem compact header preview', () => {
@@ -1303,12 +1305,60 @@ describe('ActivityItem bootstrap recipient route', () => {
       taskChip?.click();
       await Promise.resolve();
     });
-    expect(onTaskIdClick).toHaveBeenCalledWith('task-abc123');
+    expect(onTaskIdClick).toHaveBeenCalledWith('task-abc123', 'demo', 'canonical');
 
     await act(async () => {
       root.unmount();
       await Promise.resolve();
     });
+  });
+
+  it('routes literal same-display-ID task chips to their explicit A/B teams', async () => {
+    vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    const root = createRoot(host);
+    const onTaskIdClick = vi.fn();
+    const messageFor = (teamName: string, taskId: string): InboxMessage => ({
+      from: 'alice',
+      to: 'user',
+      text: 'please review',
+      timestamp: new Date('2026-10-14T12:00:00.000Z').toISOString(),
+      read: false,
+      source: 'inbox',
+      messageKind: 'task_comment_notification',
+      taskRefs: [{ taskId, displayId: '#7', teamName }],
+    });
+
+    for (const [teamName, taskId] of [
+      ['team-a', 'canonical-a'],
+      ['team-b', 'canonical-b'],
+    ] as const) {
+      await act(async () => {
+        root.render(
+          React.createElement(ActivityItem, {
+            message: messageFor(teamName, taskId),
+            teamName,
+            directParticipant: 'alice',
+            onTaskIdClick,
+          })
+        );
+        await Promise.resolve();
+      });
+      const taskChip = Array.from(host.querySelectorAll('button')).find((button) =>
+        (button.textContent ?? '').includes('#7')
+      );
+      expect(taskChip).toBeDefined();
+      await act(async () => {
+        taskChip?.click();
+        await Promise.resolve();
+      });
+    }
+
+    expect(onTaskIdClick).toHaveBeenNthCalledWith(1, 'canonical-a', 'team-a', 'canonical');
+    expect(onTaskIdClick).toHaveBeenNthCalledWith(2, 'canonical-b', 'team-b', 'canonical');
+
+    await act(async () => root.unmount());
   });
 
   it('keeps lead→teammate routes visible in the lead thread', async () => {
@@ -1694,5 +1744,159 @@ describe('message task action and dialog ownership', () => {
     expect(taskNavigate).not.toHaveBeenCalled();
     expect(teamNavigate).not.toHaveBeenCalled();
     await act(() => Promise.resolve(root.unmount()));
+  });
+});
+
+describe('collapsed message visualization access', () => {
+  it.each(['openui-lang', 'mermaid'])(
+    'keeps %s on the rich rendering path instead of a label-only preview',
+    async (language) => {
+      vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
+      const host = document.createElement('div');
+      document.body.append(host);
+      const root = createRoot(host);
+      const text = `Report\n\n\`\`\`${language}\n${language === 'mermaid' ? 'graph TD; A-->B;' : 'root = Stack([Card([TextContent("Result")])]);'}\n\`\`\``;
+      try {
+        await act(async () =>
+          root.render(
+            React.createElement(ActivityItem, {
+              message: {
+                from: 'alice',
+                to: 'user',
+                text,
+                timestamp: '2026-10-13T10:00:00.000Z',
+                read: true,
+              },
+              teamName: 'sandbox',
+              collapseMode: 'managed',
+              isCollapsed: true,
+              canToggleCollapse: true,
+            })
+          )
+        );
+        expect(host.querySelector('[data-markdown-renderer="full"]')?.textContent).toBe(text);
+        expect(host.querySelector('[data-markdown-renderer="compact"]')).toBeNull();
+        const heightBudget = host
+          .querySelector('[data-expandable-content="true"]')
+          ?.getAttribute('data-collapsed-height');
+        // Both visualization controls must remain reachable without Show more,
+        // even when their combined message body is taller than the normal preview.
+        expect(Number(heightBudget)).toBeGreaterThan(2000);
+      } finally {
+        await act(async () => root.unmount());
+        host.remove();
+      }
+    }
+  );
+  it('retains ordinary collapsed message previews', async () => {
+    vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
+    const host = document.createElement('div');
+    document.body.append(host);
+    const root = createRoot(host);
+    try {
+      await act(async () =>
+        root.render(
+          React.createElement(ActivityItem, {
+            message: {
+              from: 'alice',
+              to: 'user',
+              text: 'Ordinary short reply',
+              timestamp: '2026-10-13T10:00:00.000Z',
+              read: true,
+            },
+            teamName: 'sandbox',
+            collapseMode: 'managed',
+            isCollapsed: true,
+            canToggleCollapse: true,
+          })
+        )
+      );
+      expect(host.querySelector('[data-markdown-renderer="compact"]')?.textContent).toBe(
+        'Ordinary short reply'
+      );
+      expect(host.querySelector('[data-markdown-renderer="full"]')).toBeNull();
+    } finally {
+      await act(async () => root.unmount());
+      host.remove();
+    }
+  });
+});
+
+describe('reply visualization presentation', () => {
+  it.each(['openui-lang', 'mermaid'])(
+    'does not height-limit an actual %s reply body',
+    async (language) => {
+      vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
+      const body = `Report\n\`\`\`${language}\n${language === 'mermaid' ? 'graph TD; A-->B;' : 'root = Stack([Card([TextContent("Result")])]);'}\n\`\`\``;
+      const host = document.createElement('div');
+      document.body.append(host);
+      const root = createRoot(host);
+      try {
+        for (const appearance of ['compact', 'wide-chat'] as const) {
+          await act(async () =>
+            root.render(
+              React.createElement(ActivityItem, {
+                message: {
+                  from: 'alice',
+                  to: 'user',
+                  text: buildReplyBlock('bob', 'Quoted original', body),
+                  timestamp: '2026-10-13T10:00:00.000Z',
+                  read: true,
+                },
+                teamName: 'sandbox',
+                appearance,
+                collapseMode: 'managed',
+                isCollapsed: true,
+              })
+            )
+          );
+          const replyBody = host.querySelector('[data-markdown-renderer="full"]');
+          expect(replyBody?.textContent).toBe(body);
+          expect(replyBody?.getAttribute('data-max-height')).toBe('max-h-none');
+          expect(host.querySelector('[data-markdown-renderer="compact"]')?.textContent).toBe(
+            'Quoted original'
+          );
+        }
+      } finally {
+        await act(async () => root.unmount());
+        host.remove();
+      }
+    }
+  );
+  it('projects cross-team visualization fences before flattening a collapsed preview', async () => {
+    vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
+    const quoted = '```openui-lang\nroot = Stack([Card([TextContent("privateDSL")])]);\n```';
+    const host = document.createElement('div');
+    document.body.append(host);
+    const root = createRoot(host);
+    try {
+      await act(async () =>
+        root.render(
+          React.createElement(ActivityItem, {
+            message: {
+              from: 'alice',
+              to: 'user',
+              source: 'cross_team',
+              text: `${quoted}\n${buildReplyBlock('bob', 'Quoted original', 'Ordinary reply')}`,
+              timestamp: '2026-10-13T10:00:00.000Z',
+              read: true,
+            },
+            teamName: 'sandbox',
+            collapseMode: 'managed',
+            isCollapsed: true,
+            compactHeader: true,
+          })
+        )
+      );
+      const preview = host.querySelector('[data-markdown-renderer="compact"]');
+      expect(preview?.textContent).toContain('Visualization');
+      expect(preview?.textContent).toContain('Ordinary reply');
+      expect(preview?.textContent).not.toContain('privateDSL');
+      expect(preview?.textContent).not.toContain('Stack');
+      expect(host.querySelector('[data-markdown-renderer="full"]')).toBeNull();
+    } finally {
+      await act(async () => root.unmount());
+      host.remove();
+    }
   });
 });

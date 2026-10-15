@@ -1,5 +1,11 @@
 {
   "activity": {
+    "reactions": {
+      "add": "Adaugă reacție ({{count}})",
+      "remove": "Elimină reacția ({{count}})",
+      "count": "Reacții: {{count}}",
+      "failed": "Reacțiile nu au putut fi actualizate"
+    },
     "actions": {
       "createTaskFromMessage": "Creează sarcină din mesaj",
       "editMessage": "Editează mesajul",
@@ -998,7 +1004,8 @@
       "cancel": "Anulează",
       "delete": "Șterge",
       "markResolved": "Marchează ca rezolvată",
-      "save": "Salvează"
+      "save": "Salvează",
+      "openInTaskTab": "Deschide într-o filă separată"
     },
     "attachments": {
       "commentAttachment": "Atașament comentariu",

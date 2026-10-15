@@ -1,5 +1,11 @@
 {
   "activity": {
+    "reactions": {
+      "add": "افزودن واکنش ({{count}})",
+      "remove": "حذف واکنش ({{count}})",
+      "count": "واکنش‌ها: {{count}}",
+      "failed": "به‌روزرسانی واکنش‌ها انجام نشد"
+    },
     "actions": {
       "createTaskFromMessage": "ایجاد وظیفه از پیام",
       "editMessage": "ویرایش پیام",
@@ -998,7 +1004,8 @@
       "cancel": "لغو",
       "delete": "حذف",
       "markResolved": "علامت‌گذاری حل‌شده",
-      "save": "ذخیره"
+      "save": "ذخیره",
+      "openInTaskTab": "در برگه جداگانه باز کنید"
     },
     "attachments": {
       "commentAttachment": "پیوست نظر",

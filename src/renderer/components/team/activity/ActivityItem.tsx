@@ -1,12 +1,12 @@
-import { Fragment, memo, useCallback, useMemo } from 'react';
+import { memo, useCallback, useMemo } from 'react';
 
+import { summarizeVisualizationFences } from '@features/chat-visualizations/contracts';
 import { useAppTranslation } from '@features/localization/renderer';
 import {
   CompactMarkdownPreview,
   MarkdownViewer,
 } from '@renderer/components/chat/viewers/MarkdownViewer';
 import { CopyButton } from '@renderer/components/common/CopyButton';
-import { AttachmentDisplay } from '@renderer/components/team/attachments/AttachmentDisplay';
 import { MemberBadge } from '@renderer/components/team/MemberBadge';
 import { TaskTooltip } from '@renderer/components/team/TaskTooltip';
 import { ExpandableContent } from '@renderer/components/ui/ExpandableContent';
@@ -40,7 +40,11 @@ import {
   areStringMapsEqual,
 } from '@renderer/utils/messageRenderEquality';
 import { buildMessageTaskSeed } from '@renderer/utils/messageTaskSeed';
-import { linkifyTaskIdsInMarkdown, parseTaskLinkHref } from '@renderer/utils/taskReferenceUtils';
+import {
+  linkifyTaskIdsInMarkdown,
+  parseTaskLinkHref,
+  type TaskIdClickHandler,
+} from '@renderer/utils/taskReferenceUtils';
 import { stripAgentBlocks } from '@shared/constants/agentBlocks';
 import {
   CROSS_TEAM_SENT_SOURCE,
@@ -71,6 +75,7 @@ import {
 } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 
+import { ActivityMessageFooter } from './ActivityMessageFooter';
 import { ActivityMessageHoverCard } from './ActivityMessageHoverCard';
 import {
   type ChatAppearance,
@@ -84,6 +89,7 @@ import {
   parseQualifiedRecipient,
   parseStructuredAgentMessageCached,
 } from './activityMessagePresentation';
+import { getCommandOutputSummary } from './activityMessagePreview';
 import { isDirectParticipantSender, shouldHideDirectMemberRoute } from './activityRecipientRoute';
 import {
   encodeCacheParts,
@@ -94,6 +100,7 @@ import {
   taskRefsCacheSignature,
 } from './activityRenderCache';
 import { ActivitySenderBadge, renderGroupRecipientBadge } from './ActivitySenderBadge';
+import { renderInlineBoldSummary } from './ActivityTaskSummary';
 import { formatActivityTimestamp } from './activityTimestamp';
 import { BootstrapAcknowledgementRow, BootstrapSystemRow } from './BootstrapActivityRows';
 import { ReplyQuoteBlock } from './ReplyQuoteBlock';
@@ -138,16 +145,6 @@ const PermissionStatusIcon = memo(function PermissionStatusIcon({
   if (isPending) return <Clock size={12} className="animate-pulse text-amber-400" />;
   return <Check size={12} className="text-emerald-400/50" />;
 });
-
-function getCommandOutputSummary(text: string): string {
-  const firstLine = text
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .find(Boolean);
-
-  if (!firstLine) return '';
-  return firstLine.length > 120 ? `${firstLine.slice(0, 120)}…` : firstLine;
-}
 
 function parseIdlePeerSummaryRoute(summary: string): { recipient: string | null; body: string } {
   const trimmed = summary.trim();
@@ -221,7 +218,7 @@ interface ActivityItemProps {
   canRevise?: boolean;
   onRevise?: (message: InboxMessage) => void;
   /** Called when a task ID link (e.g. #10) is clicked in message text. */
-  onTaskIdClick?: (taskId: string) => void;
+  onTaskIdClick?: TaskIdClickHandler;
   /** Called when the user clicks "Restart team" on an auth error message. */
   onRestartTeam?: () => void;
   /** When true, apply a subtle lighter background for zebra-striped lists. */
@@ -357,7 +354,7 @@ const TaskStallRemediationRow = ({
   taskRef?: NonNullable<InboxMessage['taskRefs']>[number];
   timestamp: string;
   onMemberNameClick?: (memberName: string) => void;
-  onTaskIdClick?: (taskId: string) => void;
+  onTaskIdClick?: TaskIdClickHandler;
 }): React.JSX.Element => {
   const { t } = useAppTranslation('team');
   const taskLabel = taskRef
@@ -395,7 +392,7 @@ const TaskStallRemediationRow = ({
               className="font-medium text-blue-300 hover:text-blue-200"
               onClick={(event) => {
                 event.stopPropagation();
-                onTaskIdClick?.(taskRef.taskId);
+                onTaskIdClick?.(taskRef.taskId, taskRef.teamName, 'canonical');
               }}
             >
               {taskLabel}
@@ -429,7 +426,7 @@ const MemberWorkSyncNudgeRow = ({
   intent?: InboxMessage['workSyncIntent'];
   timestamp: string;
   onMemberNameClick?: (memberName: string) => void;
-  onTaskIdClick?: (taskId: string) => void;
+  onTaskIdClick?: TaskIdClickHandler;
 }): React.JSX.Element => {
   const { t } = useAppTranslation('team');
   const primaryTaskRef = taskRefs?.[0];
@@ -473,7 +470,7 @@ const MemberWorkSyncNudgeRow = ({
               className="font-medium text-blue-300 hover:text-blue-200"
               onClick={(event) => {
                 event.stopPropagation();
-                onTaskIdClick?.(primaryTaskRef.taskId);
+                onTaskIdClick?.(primaryTaskRef.taskId, primaryTaskRef.teamName, 'canonical');
               }}
             >
               {taskLabel}
@@ -558,58 +555,6 @@ function buildActivityDisplayText(
 // Full message card — left colored border, name badge, collapsible content
 // ---------------------------------------------------------------------------
 
-/** Render `#<task-display-id>` in plain text as clickable inline elements with TaskTooltip. */
-function linkifyTaskIds(text: string, onClick: (taskId: string) => void): React.ReactNode[] {
-  return text.split(/(#[A-Za-z0-9-]+\b)/g).map((part, i) => {
-    const match = /^#([A-Za-z0-9-]+)$/.exec(part);
-    if (!match) return <Fragment key={i}>{part}</Fragment>;
-    const taskId = match[1];
-    return (
-      <TaskTooltip key={i} taskId={taskId}>
-        <button
-          type="button"
-          className="inline cursor-pointer font-medium text-blue-600 hover:underline dark:text-blue-400"
-          onClick={(e) => {
-            e.stopPropagation();
-            onClick(taskId);
-          }}
-        >
-          {part}
-        </button>
-      </TaskTooltip>
-    );
-  });
-}
-
-/**
- * Render summary text with inline bold markdown and optional task-id linkification.
- * Splits on bold markers first, then linkifies task IDs within each segment.
- */
-function renderInlineBoldSummary(
-  text: string,
-  onTaskIdClick?: (taskId: string) => void
-): React.ReactNode {
-  // Split by **bold** segments, keeping delimiters
-  const boldPattern = /(\*\*[^*]+\*\*)/g;
-  const parts = text.split(boldPattern);
-  return parts.map((part, i) => {
-    const boldContent = /^\*\*(.+)\*\*$/.exec(part);
-    if (boldContent) {
-      const inner = boldContent[1];
-      return (
-        <strong key={i} className="font-semibold">
-          {onTaskIdClick ? linkifyTaskIds(inner, onTaskIdClick) : inner}
-        </strong>
-      );
-    }
-    return onTaskIdClick ? (
-      <Fragment key={i}>{linkifyTaskIds(part, onTaskIdClick)}</Fragment>
-    ) : (
-      <Fragment key={i}>{part}</Fragment>
-    );
-  });
-}
-
 const TaskRecipientBadge = ({
   taskId,
   displayId,
@@ -618,8 +563,8 @@ const TaskRecipientBadge = ({
 }: Readonly<{
   taskId: string;
   displayId: string;
-  teamName?: string;
-  onTaskIdClick?: (taskId: string) => void;
+  teamName: string;
+  onTaskIdClick?: TaskIdClickHandler;
 }>): React.JSX.Element => {
   const content = (
     <span
@@ -645,7 +590,7 @@ const TaskRecipientBadge = ({
         className="inline-flex rounded transition-opacity hover:opacity-90 focus:outline-none focus:ring-1 focus:ring-[var(--color-border)]"
         onClick={(e) => {
           e.stopPropagation();
-          onTaskIdClick(taskId);
+          onTaskIdClick(taskId, teamName, 'canonical');
         }}
       >
         {content}
@@ -717,7 +662,6 @@ export const ActivityItem = memo(
     const idleSemantic = classifyIdleNotificationCached(message);
     const systemLabel = !structured && !rateLimited ? getSystemMessageLabel(message.text) : null;
     const isManaged = collapseMode === 'managed';
-    const isExpanded = isManaged ? !isCollapsed : true;
     const messagePresentation = classifyActivityMessagePresentation(
       message,
       teamName,
@@ -820,9 +764,7 @@ export const ActivityItem = memo(
       (isWideAgent && (wideContent || (!senderHideAvatar && !continuesNextAuthor)));
     const crossTeamPreview = useMemo(() => {
       if (!isCrossTeamAny || !strippedText) return '';
-      const oneLine = strippedText.replace(/\n+/g, ' ').trim();
-      if (!oneLine) return '';
-      return oneLine;
+      return summarizeVisualizationFences(strippedText).replace(/\n+/g, ' ').trim();
     }, [isCrossTeamAny, strippedText]);
     const summarySource = useMemo(() => {
       if (idleSemantic?.hasPeerSummary && idleSemantic.peerSummary) {
@@ -847,7 +789,7 @@ export const ActivityItem = memo(
       // Fallback: use the beginning of message text as preview for plain-text messages
       const plain = strippedText?.trim() ?? '';
       if (!plain) return '';
-      return plain.replace(/\n+/g, ' ');
+      return summarizeVisualizationFences(plain).replace(/\n+/g, ' ');
     }, [
       crossTeamPreview,
       isSlashCommandMessage,
@@ -860,7 +802,7 @@ export const ActivityItem = memo(
       structured,
     ]);
     const rawSummary = stripAgentBlocks(summarySource);
-    const summaryText = extractMarkdownPlainTextCached(rawSummary);
+    const summaryText = extractMarkdownPlainTextCached(summarizeVisualizationFences(rawSummary));
     const compactPreviewSource = useMemo(() => {
       if (idleSemantic?.hasPeerSummary && idleSemantic.peerSummary) {
         return idleSemantic.peerSummary;
@@ -895,7 +837,13 @@ export const ActivityItem = memo(
       slashCommandMeta,
       summaryText,
     ]);
-    const compactPreviewMarkdown = stripAgentBlocks(compactPreviewSource);
+    const compactPreviewMarkdown = summarizeVisualizationFences(
+      stripAgentBlocks(compactPreviewSource)
+    );
+    const visualizationText = parsedReply?.replyText ?? displayText ?? '';
+    const hasVisualization = summarizeVisualizationFences(visualizationText) !== visualizationText;
+    const isExpanded = !isManaged || !isCollapsed || hasVisualization;
+    const bodyCap = hasVisualization ? Number.POSITIVE_INFINITY : isWideOrdinary ? 400 : undefined;
     const compactPreviewTooltipText = useMemo(() => {
       const normalized = extractMarkdownPlainTextCached(compactPreviewMarkdown)
         .replace(/\n+/g, ' ')
@@ -1193,9 +1141,9 @@ export const ActivityItem = memo(
           ) : null}
         </span>
       ) : onTaskIdClick ? (
-        renderInlineBoldSummary(rawSummary, onTaskIdClick)
+        renderInlineBoldSummary(rawSummary, onTaskIdClick, teamName)
       ) : (
-        renderInlineBoldSummary(rawSummary)
+        renderInlineBoldSummary(rawSummary, undefined, teamName)
       );
     const showHoverToolbar = Boolean(displayText);
     /* eslint-disable jsx-a11y/no-noninteractive-tabindex -- wide chat rows expose hover metadata on keyboard focus without changing the nested control semantics */
@@ -1336,6 +1284,7 @@ export const ActivityItem = memo(
                 <CompactMarkdownPreview
                   content={compactPreviewMarkdown}
                   className="mt-1 line-clamp-2 w-full min-w-0 max-w-full break-words text-[11px] leading-4"
+                  taskOriginTeamName={teamName}
                   teamColorByName={teamColorByName}
                   onTeamClick={onTeamClick}
                 />
@@ -1414,6 +1363,7 @@ export const ActivityItem = memo(
                 <CompactMarkdownPreview
                   content={compactPreviewMarkdown}
                   className="mt-1 line-clamp-2 w-full min-w-0 max-w-full break-words text-[11px] leading-4"
+                  taskOriginTeamName={teamName}
                   teamColorByName={teamColorByName}
                   onTeamClick={onTeamClick}
                 />
@@ -1584,6 +1534,7 @@ export const ActivityItem = memo(
                 teamName={teamName}
                 memberColor={memberColorMap?.get(parsedReply.agentName)}
                 replyTaskRefs={message.taskRefs}
+                bodyMaxHeight={hasVisualization ? 'max-h-none' : undefined}
               />
             ) : displayText ? (
               <div
@@ -1591,7 +1542,7 @@ export const ActivityItem = memo(
                 style={isApiError ? { color: '#f87171' } : undefined}
               >
                 <ExpandableContent
-                  collapsedHeight={isWideOrdinary ? 400 : undefined}
+                  collapsedHeight={bodyCap}
                   fadeLengthPercent={isWideOrdinary ? 20 : undefined}
                   onExpand={onExpandContent}
                 >
@@ -1607,7 +1558,12 @@ export const ActivityItem = memo(
                               e.stopPropagation();
                               const href = link.getAttribute('href');
                               const parsedTaskLink = href ? parseTaskLinkHref(href) : null;
-                              if (parsedTaskLink?.taskId) onTaskIdClick(parsedTaskLink.taskId);
+                              if (parsedTaskLink?.taskId)
+                                onTaskIdClick(
+                                  parsedTaskLink.taskId,
+                                  parsedTaskLink.teamName ?? teamName,
+                                  parsedTaskLink.teamName ? 'canonical' : 'display'
+                                );
                             }
                           }
                         : undefined
@@ -1618,6 +1574,7 @@ export const ActivityItem = memo(
                       maxHeight="max-h-none"
                       className="[&_li]:text-[13px] [&_p]:text-[13px] [&_table]:text-[13px]"
                       bare
+                      taskOriginTeamName={teamName}
                       teamColorByName={teamColorByName}
                       onTeamClick={onTeamClick}
                     />
@@ -1651,15 +1608,9 @@ export const ActivityItem = memo(
                 </div>
               </div>
             ) : null}
-            {message.attachments?.length && message.messageId ? (
-              <AttachmentDisplay
-                teamName={teamName}
-                messageId={message.messageId}
-                attachments={message.attachments}
-              />
-            ) : null}
           </div>
         ) : null}
+        <ActivityMessageFooter teamName={teamName} message={message} expanded={isExpanded} />
       </article>
     );
     /* eslint-enable jsx-a11y/no-noninteractive-tabindex */

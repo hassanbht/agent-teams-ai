@@ -1,5 +1,11 @@
 {
   "activity": {
+    "reactions": {
+      "add": "प्रतिक्रिया जोडा ({{count}})",
+      "remove": "प्रतिक्रिया काढा ({{count}})",
+      "count": "प्रतिक्रिया: {{count}}",
+      "failed": "प्रतिक्रिया अद्ययावत करता आल्या नाहीत"
+    },
     "actions": {
       "createTaskFromMessage": "संदेशातून टास्क तयार करा",
       "editMessage": "संदेश संपादित करा",
@@ -998,7 +1004,8 @@
       "cancel": "रद्द करा",
       "delete": "हटवा",
       "markResolved": "निराकरण झाले म्हणून चिन्हांकित करा",
-      "save": "जतन करा"
+      "save": "जतन करा",
+      "openInTaskTab": "स्वतंत्र टॅबमध्ये उघडा"
     },
     "attachments": {
       "commentAttachment": "टिप्पणी संलग्नक",

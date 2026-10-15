@@ -1,5 +1,11 @@
 {
   "activity": {
+    "reactions": {
+      "add": "Reactie toevoegen ({{count}})",
+      "remove": "Reactie verwijderen ({{count}})",
+      "count": "Reacties: {{count}}",
+      "failed": "Reacties bijwerken mislukt"
+    },
     "actions": {
       "createTaskFromMessage": "Taak aanmaken vanuit bericht",
       "editMessage": "Bericht bewerken",
@@ -998,7 +1004,8 @@
       "cancel": "Annuleren",
       "delete": "Verwijderen",
       "markResolved": "Markeren als opgelost",
-      "save": "Opslaan"
+      "save": "Opslaan",
+      "openInTaskTab": "Openen in afzonderlijk tabblad"
     },
     "attachments": {
       "commentAttachment": "Opmerkingbijlage",
