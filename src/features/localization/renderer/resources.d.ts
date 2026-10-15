@@ -3963,6 +3963,16 @@ export default interface Resources {
         "selectTemplate": "Choose a built-in template",
         "title": "Copy Built-in Template"
       },
+      "createFromTemplate": {
+        "builtinGroup": "Built-in templates",
+        "customGroup": "My templates",
+        "description": "Apply a built-in or saved custom template to prefill the team prompt and members. You can still edit everything before creating the team.",
+        "noneHint": "Create a blank team with the usual settings.",
+        "noneLabel": "No template",
+        "sourceCustom": "Custom template (read-only source)",
+        "staleWarning": "The selected custom template no longer exists. The form keeps the previously applied values — choose another template to replace them, or continue with the current values.",
+        "title": "Start from a template (optional)"
+      },
       "delete": {
         "cancel": "Cancel",
         "confirm": "Delete template",
