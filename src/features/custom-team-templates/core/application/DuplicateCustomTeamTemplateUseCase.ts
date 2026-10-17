@@ -1,13 +1,14 @@
 import { CUSTOM_TEAM_TEMPLATE_SCHEMA_VERSION } from '@features/custom-team-templates/contracts';
+
 import { serializeCanonicalTemplateContent } from '../domain/canonicalTemplateSerialization';
 import { validateTemplateName } from '../domain/templateNamePolicy';
 
 import type { CustomTeamTemplateHasher, CustomTeamTemplateStorageGateway } from './ports';
 import type {
+  CustomTeamTemplateV1,
   CustomTeamTemplateValidationIssue,
   DuplicateCustomTeamTemplateRequest,
   DuplicateCustomTeamTemplateResult,
-  CustomTeamTemplateV1,
 } from '@features/custom-team-templates/contracts';
 
 export interface DuplicateCustomTeamTemplateUseCaseDeps {
@@ -94,11 +95,9 @@ export class DuplicateCustomTeamTemplateUseCase {
         return { status: 'storageUnavailable' };
       }
       switch (result.status) {
+        // A create that landed and an idempotent retry of the same create have
+        // the same meaning for the caller: the stored copy is the duplicate.
         case 'created':
-          return {
-            status: 'duplicated',
-            template: { ...result.template, revision: result.template.revision ?? 1 },
-          };
         case 'alreadySaved':
           return {
             status: 'duplicated',

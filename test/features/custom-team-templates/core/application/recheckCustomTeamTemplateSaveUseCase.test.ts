@@ -277,6 +277,8 @@ describe('RecheckCustomTeamTemplateSaveUseCase', () => {
         customTeamTemplateCreate: vi.fn(),
         customTeamTemplateList: vi.fn().mockResolvedValue({ templates: [], unreadableRecords: [] }),
         customTeamTemplateGetById: read,
+        customTeamTemplateUpdate: vi.fn(),
+        customTeamTemplateDelete: vi.fn(),
       },
       hasher,
       previewStore: store,

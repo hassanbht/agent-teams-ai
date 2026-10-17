@@ -19,8 +19,10 @@
 import {
   type CreateCustomTeamTemplateRecordResult,
   CUSTOM_TEAM_TEMPLATE_ROUTES,
+  type DeleteCustomTeamTemplateRecordResult,
   type ListCustomTeamTemplateRecordsResult,
   type ReadCustomTeamTemplateRecordResult,
+  type UpdateCustomTeamTemplateRecordResult,
 } from '@features/custom-team-templates/contracts';
 import { registerCustomTeamTemplatesHttp } from '@features/custom-team-templates/main/adapters/input/http/registerCustomTeamTemplatesHttp';
 import {
@@ -77,6 +79,14 @@ function sqliteGateway(core: InternalStorageWorkerCore): CustomTeamTemplateStora
     customTeamTemplateGetById: (request) =>
       Promise.resolve(
         core.handle('customTemplate.getById', request) as ReadCustomTeamTemplateRecordResult
+      ),
+    customTeamTemplateUpdate: (request) =>
+      Promise.resolve(
+        core.handle('customTemplate.update', request) as UpdateCustomTeamTemplateRecordResult
+      ),
+    customTeamTemplateDelete: (request) =>
+      Promise.resolve(
+        core.handle('customTemplate.delete', request) as DeleteCustomTeamTemplateRecordResult
       ),
   };
 }

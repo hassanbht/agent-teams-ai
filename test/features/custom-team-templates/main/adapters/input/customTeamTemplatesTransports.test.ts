@@ -137,7 +137,7 @@ function deterministicFeature(): CustomTeamTemplatesFeature {
 }
 
 describe('custom-team-templates transports', () => {
-  it('registers exactly the four IPC channels and the four HTTP routes', () => {
+  it('registers exactly the declared IPC channels and the matching HTTP routes', () => {
     const ipc = fakeIpcMain();
     const http = fakeFastify();
     registerCustomTeamTemplatesIpc(ipc as unknown as IpcMain, deterministicFeature());
@@ -145,12 +145,19 @@ describe('custom-team-templates transports', () => {
 
     const byName = (left: string, right: string): number => left.localeCompare(right);
     expect(ipc.channels()).toEqual(Object.values(CUSTOM_TEAM_TEMPLATE_CHANNELS).sort(byName));
+    // Every operation the contract declares must be reachable over HTTP with
+    // the transport the renderer adapter uses: the four A1 operations plus the
+    // four Phase 2 (A3) management operations.
     expect(http.keys()).toEqual(
       [
         `POST ${CUSTOM_TEAM_TEMPLATE_ROUTES.preparePreview}`,
         `POST ${CUSTOM_TEAM_TEMPLATE_ROUTES.saveTemplate}`,
         `POST ${CUSTOM_TEAM_TEMPLATE_ROUTES.recheckSave}`,
         `GET ${CUSTOM_TEAM_TEMPLATE_ROUTES.listTemplates}`,
+        `POST ${CUSTOM_TEAM_TEMPLATE_ROUTES.updateTemplate}`,
+        `POST ${CUSTOM_TEAM_TEMPLATE_ROUTES.deleteTemplate}`,
+        `POST ${CUSTOM_TEAM_TEMPLATE_ROUTES.duplicateTemplate}`,
+        `POST ${CUSTOM_TEAM_TEMPLATE_ROUTES.copyBuiltinTemplate}`,
       ].sort(byName)
     );
     // No transport is registered by composition itself.
@@ -262,7 +269,7 @@ describe('custom-team-templates transports', () => {
   it('removes exactly the registered IPC channels on shutdown', () => {
     const ipc = fakeIpcMain();
     registerCustomTeamTemplatesIpc(ipc as unknown as IpcMain, deterministicFeature());
-    expect(ipc.channels()).toHaveLength(4);
+    expect(ipc.channels()).toHaveLength(Object.values(CUSTOM_TEAM_TEMPLATE_CHANNELS).length);
 
     removeCustomTeamTemplatesIpc(ipc as unknown as IpcMain);
     expect(ipc.channels()).toEqual([]);

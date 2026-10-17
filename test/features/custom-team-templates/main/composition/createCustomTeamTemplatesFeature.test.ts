@@ -205,13 +205,18 @@ describe('createCustomTeamTemplatesFeature', () => {
       issues: [{ code: 'templateNameRequired', field: 'name' }],
     });
     // The preview-token class is the port-level interruption signal, and no
-    // renderer-facing surface is registered by composition.
+    // renderer-facing surface is registered by composition. The facade exposes
+    // exactly the A1 operations plus the Phase 2 (A3) management operations.
     expect(Object.keys(feature).sort((left, right) => left.localeCompare(right))).toEqual([
+      'copyBuiltinTemplate',
+      'deleteTemplate',
       'dispose',
+      'duplicateTemplate',
       'listTemplates',
       'preparePreview',
       'recheckSave',
       'saveTemplate',
+      'updateTemplate',
     ]);
   });
 });

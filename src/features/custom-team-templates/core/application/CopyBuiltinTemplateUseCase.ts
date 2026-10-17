@@ -1,4 +1,5 @@
 import { CUSTOM_TEAM_TEMPLATE_SCHEMA_VERSION } from '@features/custom-team-templates/contracts';
+
 import { serializeCanonicalTemplateContent } from '../domain/canonicalTemplateSerialization';
 import { validateTemplateContent } from '../domain/templateContentPolicy';
 import { validateTemplateName } from '../domain/templateNamePolicy';

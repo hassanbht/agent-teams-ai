@@ -2,9 +2,9 @@ import { randomUUID } from 'node:crypto';
 
 import { TEAM_TEMPLATES } from '@features/team-templates/core';
 
+import { CopyBuiltinTemplateUseCase } from '../../core/application/CopyBuiltinTemplateUseCase';
 import { DeleteCustomTeamTemplateUseCase } from '../../core/application/DeleteCustomTeamTemplateUseCase';
 import { DuplicateCustomTeamTemplateUseCase } from '../../core/application/DuplicateCustomTeamTemplateUseCase';
-import { CopyBuiltinTemplateUseCase } from '../../core/application/CopyBuiltinTemplateUseCase';
 import { InMemoryCustomTeamTemplatePreviewStore } from '../../core/application/InMemoryCustomTeamTemplatePreviewStore';
 import { ListCustomTeamTemplatesUseCase } from '../../core/application/ListCustomTeamTemplatesUseCase';
 import { PrepareCustomTemplatePreviewUseCase } from '../../core/application/PrepareCustomTemplatePreviewUseCase';

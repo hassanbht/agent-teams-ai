@@ -56,7 +56,9 @@ export const DuplicateCustomTemplateDialog = ({
       setErrorState(null);
       setIssues([]);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Deliberately keyed on `open`/`template` only: the editable fields are
+    // reset when the dialog opens for a (possibly different) template, and the
+    // state setters are stable.
   }, [open, template]);
 
   if (!template) return null;

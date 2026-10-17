@@ -71,7 +71,15 @@ describe('InternalStorageWorkerCore', () => {
     seed.handle('ping', {});
     seed.close();
     const raw = new Database(dbPath);
-    raw.exec("ALTER TABLE member_work_sync_report_intents DROP COLUMN journal_json; PRAGMA user_version = 4;");
+    // Rewind the schema as well as the version marker so the fixture really is
+    // a v4 database: every later migration (including the v6 template table and
+    // the v7 revision column) then replays exactly as it does in the field.
+    raw.exec(
+      'ALTER TABLE member_work_sync_report_intents DROP COLUMN journal_json; ' +
+        'DROP TABLE IF EXISTS custom_team_templates; ' +
+        'DROP INDEX IF EXISTS idx_custom_team_templates_name_normalized; ' +
+        'PRAGMA user_version = 4;'
+    );
     raw.prepare('INSERT INTO member_work_sync_report_intents (team_name,id,member_key,member_name,status,reason,recorded_at,request_json) VALUES (?,?,?,?,?,?,?,?)').run('sandbox','legacy','alice','alice','pending','fallback','2026-09-10T00:00:00Z','{}');
     raw.close();
     const upgraded = track(makeCore(dbPath));
