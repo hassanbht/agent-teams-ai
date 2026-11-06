@@ -48,24 +48,41 @@ const TEMPLATE_ICONS = {
  * directly from `TEAM_TEMPLATES`. It never touches SQLite or the custom
  * template API, so it stays usable while custom templates load or fail.
  */
+import { composeBuiltinTemplates } from './templateLibraryFilters';
+
 export interface BuiltInTemplateCatalogueProps {
   onCopyBuiltin?: (
     id: import('@features/custom-team-templates/contracts').BuiltinTeamTemplateId
   ) => void;
+  query?: string;
+  sort?: import('./templateLibraryFilters').TemplateSortOption;
+  memberFilter?: import('./templateLibraryFilters').MemberCountFilter;
 }
 
 export const BuiltInTemplateCatalogue = ({
   onCopyBuiltin,
+  query = '',
+  sort = 'original',
+  memberFilter = 'all',
 }: BuiltInTemplateCatalogueProps = {}): React.JSX.Element => {
   const { t } = useAppTranslation('team');
   const { isLight } = useTheme();
+  const collator = new Intl.Collator(undefined, { sensitivity: 'base' });
+  const templates = composeBuiltinTemplates(
+    TEAM_TEMPLATES,
+    query,
+    memberFilter,
+    sort,
+    collator,
+    (k: string) => t(k as never)
+  );
 
   return (
     <div className="space-y-3" data-testid="built-in-template-catalogue">
       <p className="text-xs text-[var(--color-text-muted)]">
         {t('customTemplates.library.builtInDescription')}
       </p>
-      {TEAM_TEMPLATES.map((template) => {
+      {templates.map((template) => {
         const participants = [
           {
             name: 'team-lead',

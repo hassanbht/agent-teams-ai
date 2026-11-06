@@ -3110,7 +3110,27 @@
       "unreadableRecords_few": "{{count}} stored templates could not be read and are missing from this list.",
       "unreadableRecords_many": "{{count}} stored templates could not be read and are missing from this list.",
       "unreadableRecords_one": "{{count}} stored template could not be read and is missing from this list.",
-      "unreadableRecords_other": "{{count}} stored templates could not be read and are missing from this list."
+      "unreadableRecords_other": "{{count}} stored templates could not be read and are missing from this list.",
+      "clearFilters": "Reset",
+      "filter": {
+        "all": "All templates",
+        "large": "6+ members",
+        "single": "1 member",
+        "small": "2–5 members"
+      },
+      "filterLabel": "Member count",
+      "noResults": "No matching templates found.",
+      "resultCount": "{{count}} of {{total}} templates",
+      "searchLabel": "Search templates",
+      "searchPlaceholder": "Search by name, description, or member",
+      "sort": {
+        "membersAsc": "Members: fewest first",
+        "membersDesc": "Members: most first",
+        "nameAsc": "Name: A–Z",
+        "nameDesc": "Name: Z–A",
+        "original": "Original order"
+      },
+      "sortLabel": "Sort"
     },
     "preview": {
       "membersEmpty": "No members recorded — a prompt-only template",

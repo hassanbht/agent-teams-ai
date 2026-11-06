@@ -564,6 +564,119 @@ describe('MyTemplatesDialog', () => {
     });
   });
 
+  describe('Search, sort and filter', () => {
+    const libraryTemplates: readonly CustomTeamTemplateV1[] = [
+      {
+        templateId: 't-alpha',
+        name: 'Alpha Team',
+        description: 'Reusable setup for projects',
+        schemaVersion: 1,
+        teamPrompt: 'Lead the work.',
+        members: [
+          { name: 'ann', role: 'Developer' },
+          { name: 'bob', role: 'Designer' },
+        ],
+        createdAt: '2026-10-01T10:00:00.000Z',
+      },
+      {
+        templateId: 't-beta',
+        name: 'Beta',
+        description: 'A different template',
+        schemaVersion: 1,
+        teamPrompt: '',
+        members: [{ name: 'carol', role: 'Lead' }],
+        createdAt: '2026-10-02T10:00:00.000Z',
+      },
+      {
+        templateId: 't-gamma',
+        name: 'Gamma Squad',
+        description: 'Reusable setup',
+        schemaVersion: 1,
+        teamPrompt: 'Coordinate.',
+        members: [
+          { name: 'dave', role: 'Dev' },
+          { name: 'eve', role: 'Dev' },
+          { name: 'frank', role: 'Dev' },
+          { name: 'grace', role: 'Dev' },
+          { name: 'heidi', role: 'Dev' },
+          { name: 'ivan', role: 'Dev' },
+        ],
+        createdAt: '2026-10-03T10:00:00.000Z',
+      },
+    ];
+
+    function libraryInput(): HTMLInputElement | null {
+      return host.querySelector<HTMLInputElement>(
+        'input[aria-label="customTemplates.library.searchLabel"]'
+      );
+    }
+
+    function visibleCardNames(): string[] {
+      return Array.from(host.querySelectorAll('[data-testid="custom-template-library"] li')).map(
+        (li) => {
+          const nameSpan = li.querySelector('span');
+          return nameSpan?.textContent ?? '';
+        }
+      );
+    }
+
+    function resultCountText(): string | null {
+      return host.querySelector('p[aria-live="polite"]')?.textContent ?? null;
+    }
+
+    beforeEach(async () => {
+      listTemplates.mockResolvedValue({ status: 'ready', templates: libraryTemplates });
+      await render();
+    });
+
+    it('search control is visible and accessible', () => {
+      expect(libraryInput()).not.toBeNull();
+      expect(libraryInput()?.getAttribute('aria-label')).toBe(
+        'customTemplates.library.searchLabel'
+      );
+      expect(libraryInput()?.getAttribute('placeholder')).toBe(
+        'customTemplates.library.searchPlaceholder'
+      );
+    });
+
+    it('renders all library cards initially', () => {
+      expect(visibleCardNames()).toEqual(['Alpha Team', 'Beta', 'Gamma Squad']);
+    });
+
+    it('result count shows total templates', () => {
+      expect(resultCountText()).toContain('count=3;total=3');
+    });
+
+    it('Edit, Delete and Duplicate actions remain available on cards', async () => {
+      const labels = Array.from(host.querySelectorAll('button')).map(
+        (b) => b.textContent?.trim() ?? ''
+      );
+      expect(labels.some((label) => /edit/i.test(label))).toBe(true);
+      expect(labels.some((label) => /delete/i.test(label))).toBe(true);
+      expect(labels.some((label) => /duplicate/i.test(label))).toBe(true);
+    });
+
+    it('long unbroken description wraps safely', () => {
+      const card = host.querySelector('[data-testid="custom-template-library"] li');
+      expect(card).not.toBeNull();
+      const description = card?.querySelector('p[class*="overflow-wrap"]');
+      expect(description).not.toBeNull();
+    });
+
+    it('import remains available in the ready library state', () => {
+      expect(host.querySelector('[data-testid="import-template-button"]')).not.toBeNull();
+    });
+
+    it('tabs never mix collections', async () => {
+      expect(host.querySelector('[data-testid="custom-template-library"]')).not.toBeNull();
+      await selectTab('customTemplates.library.tabs.builtIn');
+      expect(host.querySelector('[data-testid="built-in-template-catalogue"]')).not.toBeNull();
+      expect(host.querySelector('[data-testid="custom-template-library"]')).toBeNull();
+      await selectTab('customTemplates.library.tabs.myTemplates');
+      expect(host.querySelector('[data-testid="custom-template-library"]')).not.toBeNull();
+    });
+  });
+
   describe('Export action availability', () => {
     it('does not add Export action to Built-in tab records', async () => {
       await render();

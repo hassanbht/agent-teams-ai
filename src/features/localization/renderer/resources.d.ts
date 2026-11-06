@@ -4058,10 +4058,10 @@ export default interface Resources {
         "description": "Export “{{name}}” as a portable JSON file.",
         "errors": {
           "downloadFailed": "The download could not be started. Try again.",
-          "transportFailed": "The export request could not be completed. Try again.",
           "filePickerFailed": "The file picker could not be opened.",
           "fileWriteFailed": "The file could not be written. Try again.",
-          "invalidRequest": "The export request was invalid."
+          "invalidRequest": "The export request was invalid.",
+          "transportFailed": "The export request could not be completed. Try again."
         },
         "exporting": "Exporting…",
         "success": "Export successful",
@@ -4100,15 +4100,35 @@ export default interface Resources {
       },
       "library": {
         "builtInDescription": "Ready-made team setups with roles and responsibilities.",
+        "clearFilters": "Reset",
         "createdAt": "Saved {{date}}",
         "description": "Browse ready-made team setups and your saved templates.",
         "empty": "No saved templates yet",
         "emptyDescription": "Open a team and choose Save as Template to create one.",
+        "filter": {
+          "all": "All templates",
+          "large": "6+ members",
+          "single": "1 member",
+          "small": "2–5 members"
+        },
+        "filterLabel": "Member count",
         "loadFailed": "The template library could not be loaded.",
         "loading": "Loading templates…",
         "memberNames": "Members: {{names}}",
         "noDescription": "No description",
         "noMembers": "Prompt-only template — no members recorded",
+        "noResults": "No matching templates found.",
+        "resultCount": "{{count}} of {{total}} templates",
+        "searchLabel": "Search templates",
+        "searchPlaceholder": "Search by name, description, or member",
+        "sort": {
+          "membersAsc": "Members: fewest first",
+          "membersDesc": "Members: most first",
+          "nameAsc": "Name: A–Z",
+          "nameDesc": "Name: Z–A",
+          "original": "Original order"
+        },
+        "sortLabel": "Sort",
         "storageUnavailable": "The template library is unavailable right now.",
         "tabs": {
           "builtIn": "Built-in",

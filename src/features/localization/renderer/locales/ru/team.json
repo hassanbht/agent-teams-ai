@@ -3368,7 +3368,27 @@
       "unreadableRecords_few": "{{count}} сохранённых шаблона не удалось прочитать, и их нет в этом списке.",
       "unreadableRecords_many": "{{count}} сохранённых шаблонов не удалось прочитать, и их нет в этом списке.",
       "unreadableRecords_one": "{{count}} сохранённый шаблон не удалось прочитать, и его нет в этом списке.",
-      "unreadableRecords_other": "{{count}} сохранённого шаблона не удалось прочитать, и его нет в этом списке."
+      "unreadableRecords_other": "{{count}} сохранённого шаблона не удалось прочитать, и его нет в этом списке.",
+      "clearFilters": "Reset",
+      "filter": {
+        "all": "All templates",
+        "large": "6+ members",
+        "single": "1 member",
+        "small": "2–5 members"
+      },
+      "filterLabel": "Member count",
+      "noResults": "No matching templates found.",
+      "resultCount": "{{count}} of {{total}} templates",
+      "searchLabel": "Search templates",
+      "searchPlaceholder": "Search by name, description, or member",
+      "sort": {
+        "membersAsc": "Members: fewest first",
+        "membersDesc": "Members: most first",
+        "nameAsc": "Name: A–Z",
+        "nameDesc": "Name: Z–A",
+        "original": "Original order"
+      },
+      "sortLabel": "Sort"
     },
     "preview": {
       "membersEmpty": "Участники не записаны — шаблон только с промптом",

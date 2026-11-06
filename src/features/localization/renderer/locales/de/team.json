@@ -3068,10 +3068,10 @@
         "memberNameRequired": "Member name is required.",
         "memberRoleTooLong": "Member role is too long.",
         "memberWorkflowTooLong": "Member workflow is too long.",
-        "teamPromptInvalidType": "The team prompt must be a text value.",
+        "teamPromptInvalidType": "Der Team-Prompt muss ein Textwert sein.",
         "teamPromptTooLong": "Team prompt is too long.",
         "tooManyMembers": "Too many members.",
-        "unexpectedProperty": "The file contains an unexpected property “{{property}}”."
+        "unexpectedProperty": "Die Datei enthält eine unerwartete Eigenschaft “{{property}}”."
       },
       "nameConflict": "A template with this name already exists. Change the name — existing templates are never overwritten.",
       "requestFailed": "The request failed. Try again.",
@@ -3090,15 +3090,35 @@
     },
     "library": {
       "builtInDescription": "Ready-made team setups with roles and responsibilities.",
+      "clearFilters": "Zurücksetzen",
       "createdAt": "Saved {{date}}",
       "description": "Browse ready-made team setups and your saved templates.",
       "empty": "No saved templates yet",
       "emptyDescription": "Open a team and choose Save as Template to create one.",
+      "filter": {
+        "all": "Alle Vorlagen",
+        "large": "6+ Mitglieder",
+        "single": "1 Mitglied",
+        "small": "2–5 Mitglieder"
+      },
+      "filterLabel": "Mitgliederanzahl",
       "loadFailed": "The template library could not be loaded.",
       "loading": "Loading templates…",
       "memberNames": "Members: {{names}}",
       "noDescription": "No description",
       "noMembers": "Prompt-only template — no members recorded",
+      "noResults": "Keine passenden Vorlagen gefunden.",
+      "resultCount": "{{count}} von {{total}} Vorlagen",
+      "searchLabel": "Vorlagen suchen",
+      "searchPlaceholder": "Nach Name, Beschreibung oder Mitglied suchen",
+      "sort": {
+        "membersAsc": "Mitglieder: aufsteigend",
+        "membersDesc": "Mitglieder: absteigend",
+        "nameAsc": "Name: A–Z",
+        "nameDesc": "Name: Z–A",
+        "original": "Originalreihenfolge"
+      },
+      "sortLabel": "Sortierung",
       "storageUnavailable": "The template library is unavailable right now.",
       "tabs": {
         "builtIn": "Built-in",
@@ -3144,7 +3164,7 @@
       "unresolvedDeleteBody": "The deletion could not be confirmed, so nothing was retried automatically. Check My Templates before trying again — the template may already be gone.",
       "unresolvedMutationBody": "The change could not be confirmed, so nothing was retried automatically. Check My Templates before trying again — the change may already have been applied.",
       "unresolvedTitle": "Outcome not confirmed",
-      "unresolvedImportBody": "The import could not be confirmed, so nothing was retried automatically. Check My Templates before trying again — the template may already have been imported."
+      "unresolvedImportBody": "Der Import konnte nicht bestätigt werden, daher wurde nichts automatisch wiederholt. Prüfen Sie Meine Vorlagen, bevor Sie es erneut versuchen — die Vorlage wurde möglicherweise bereits importiert."
     },
     "warnings": {
       "emptyRoster": "The roster was read successfully and is empty. A prompt-only template is valid.",
@@ -3212,48 +3232,48 @@
       "title": "Edit template"
     },
     "import": {
-      "title": "Import Template",
-      "description": "Import a portable team template from a JSON file.",
-      "action": "Import Template",
-      "importing": "Importing…",
-      "success": "Import successful",
-      "successBody": "The template has been imported into My Templates.",
-      "selectFileLabel": "Select JSON file",
-      "fileHint": "Choose a .json file exported from Agent Teams.",
-      "platformBrowser": "Browser file import",
-      "platformElectron": "Native file picker",
-      "platformUnavailable": "File import is not available in this environment.",
-      "renameNameFieldLabel": "Template name",
-      "nameConflictTitle": "Template already exists",
-      "nameConflictBody": "A template named “{{name}}” already exists. Choose a different name to import as a new template.",
-      "confirmImport": "Confirm import",
+      "title": "Vorlage importieren",
+      "description": "Importieren Sie eine portable Teamvorlage aus einer JSON-Datei.",
+      "action": "Vorlage importieren",
+      "importing": "Importiere…",
+      "success": "Import erfolgreich",
+      "successBody": "Die Vorlage wurde in Meine Vorlagen importiert.",
+      "selectFileLabel": "JSON-Datei auswählen",
+      "fileHint": "Wählen Sie eine .json-Datei, die aus Agent Teams exportiert wurde.",
+      "platformBrowser": "Browser-Dateiimport",
+      "platformElectron": "Nativer Dateiauswahldialog",
+      "platformUnavailable": "Der Dateiimport ist in dieser Umgebung nicht verfügbar.",
+      "renameNameFieldLabel": "Vorlagenname",
+      "nameConflictTitle": "Vorlage existiert bereits",
+      "nameConflictBody": "Eine Vorlage mit dem Namen “{{name}}” existiert bereits. Wählen Sie einen anderen Namen, um die Vorlage als neue zu importieren.",
+      "confirmImport": "Import bestätigen",
       "errors": {
-        "invalidJson": "The file is not valid JSON.",
-        "invalidEncoding": "The file is not valid UTF-8.",
-        "fileTooLarge": "The file is too large to import.",
-        "fileReadFailed": "The file could not be read.",
-        "transportFailed": "The import request could not be completed. Try again.",
-        "unsupportedFormat": "The file format is not supported.",
-        "unsupportedVersion": "The template schema version is not supported.",
-        "validationFailed": "The template content failed validation.",
-        "storageUnavailable": "The template library is unavailable. Nothing was imported.",
-        "filePickerFailed": "The file picker could not be opened.",
-        "fileChanged": "The file changed while it was being read."
+        "invalidJson": "Die Datei ist kein gültiges JSON.",
+        "invalidEncoding": "Die Datei ist kein gültiges UTF-8.",
+        "fileTooLarge": "Die Datei ist zu groß für den Import.",
+        "fileReadFailed": "Die Datei konnte nicht gelesen werden.",
+        "transportFailed": "Die Importanfrage konnte nicht abgeschlossen werden. Wiederholen Sie den Vorgang.",
+        "unsupportedFormat": "Das Dateiformat wird nicht unterstützt.",
+        "unsupportedVersion": "Die Vorlagenschema-Version wird nicht unterstützt.",
+        "validationFailed": "Der Vorlageninhalt ist nicht validiert.",
+        "storageUnavailable": "Die Vorlagenbibliothek ist nicht verfügbar. Nichts wurde importiert.",
+        "filePickerFailed": "Der Dateiauswahldialog konnte nicht geöffnet werden.",
+        "fileChanged": "Die Datei hat sich während des Lesens geändert."
       }
     },
     "export": {
-      "title": "Export Template",
-      "description": "Export “{{name}}” as a portable JSON file.",
-      "action": "Export",
-      "exporting": "Exporting…",
-      "success": "Export successful",
-      "successBody": "“{{name}}” has been exported as a JSON file.",
+      "title": "Vorlage exportieren",
+      "description": "“{{name}}” als portable JSON-Datei exportieren.",
+      "action": "Exportieren",
+      "exporting": "Exportiere…",
+      "success": "Export erfolgreich",
+      "successBody": "“{{name}}” wurde als JSON-Datei exportiert.",
       "errors": {
-        "downloadFailed": "The download could not be started. Try again.",
-        "transportFailed": "The export request could not be completed. Try again.",
-        "filePickerFailed": "The file picker could not be opened.",
-        "fileWriteFailed": "The file could not be written. Try again.",
-        "invalidRequest": "The export request was invalid."
+        "downloadFailed": "Der Download konnte nicht gestartet werden. Wiederholen Sie den Vorgang.",
+        "transportFailed": "Die Exportanfrage konnte nicht abgeschlossen werden. Wiederholen Sie den Vorgang.",
+        "filePickerFailed": "Der Dateiauswahldialog konnte nicht geöffnet werden.",
+        "fileWriteFailed": "Die Datei konnte nicht geschrieben werden. Wiederholen Sie den Vorgang.",
+        "invalidRequest": "Die Exportanfrage war ungültig."
       }
     }
   }
